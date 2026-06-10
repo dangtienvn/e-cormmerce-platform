@@ -1,0 +1,88 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: ecom_crm
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - crm_network
+
+  backend:
+    build:
+      context: ./apps/backend-core
+    restart: always
+    ports:
+      - "5000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:rootpassword@db:5432/ecom_crm?schema=public
+      - PORT=3000
+      - JWT_SECRET=production_secret_key_change_this
+      # AWS S3 Settings
+      - AWS_REGION=ap-southeast-1
+      - AWS_ACCESS_KEY_ID=your_access_key
+      - AWS_SECRET_ACCESS_KEY=your_secret_key
+      - AWS_S3_BUCKET_NAME=crm-digital-products
+      # VNPay Settings
+      - VNP_TMN_CODE=your_tmn_code
+      - VNP_HASH_SECRET=your_hash_secret
+      - VNP_URL=https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - VNP_RETURN_URL=http://localhost:5000/api/payment/vnpay-return
+    depends_on:
+      - db
+    networks:
+      - crm_network
+
+  frontend:
+    build:
+      context: ./apps/crm-system
+    restart: always
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    networks:
+      - crm_network
+
+  digital-store:
+    build:
+      context: ./apps/digital-store
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    restart: always
+    ports:
+      - "3002:3000"
+    depends_on:
+      - backend
+    networks:
+      - crm_network
+
+  blog-cms:
+    build:
+      context: ./apps/blog-cms
+      args:
+        - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+    restart: always
+    ports:
+      - "3003:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:rootpassword@db:5432/ecom_crm?schema=public
+    depends_on:
+      - db
+      - backend
+    networks:
+      - crm_network
+
+volumes:
+  db_data:
+
+networks:
+  crm_network:
+    driver: bridge
