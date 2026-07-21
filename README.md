@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=E-Commerce%20%26%20CRM%20Ecosystem&fontSize=50&fontAlignY=38&desc=Enterprise-grade%20Microservices%20Architecture&descAlignY=60&descAlign=60" width="100%" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=E-Commerce%20and%20CRM%20Ecosystem&fontSize=50&fontAlignY=38&desc=Enterprise-grade%20Microservices%20Architecture&descAlignY=60&descAlign=60" width="100%" />
 
   <p>
     <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-black?style=for-the-badge&amp;logo=next.js&amp;logoColor=white" alt="Next.js" /></a>
@@ -73,11 +73,22 @@ All applications reside within the `apps/` directory, while shared resources and
 
 ### 3. [CRM System (`apps/crm-system`)](./apps/crm-system)
 - **Role:** The internal administration portal. Features advanced dashboards, order tracking, product management, and revenue analytics.
-- **Tech Stack:** HTML5, CSS3, Vanilla JS, Bootstrap 5, Chart.js.
+- **Tech Stack:** React 19, Vite, Tailwind CSS, React Query, Lucide Icons.
 
 ### 4. [Blog & CMS (`apps/blog-cms`)](./apps/blog-cms)
 - **Role:** A content management system designed to drive organic traffic and boost inbound marketing.
 - **Tech Stack:** Next.js 15, PostgreSQL, Prisma, Tailwind CSS.
+
+---
+
+## ✨ Key Features
+
+- **Robust Backend Core:** RESTful APIs built with Node.js & Express, utilizing Prisma ORM for type-safe database interactions with PostgreSQL.
+- **Advanced Authentication:** Secure JWT-based auth system with Role-Based Access Control (RBAC) separating Customers and Admins.
+- **Modern E-Commerce Storefront:** Next.js-powered digital store with global state management via Zustand, optimized for Core Web Vitals and seamless checkout experiences.
+- **Powerful CRM Dashboard:** React/Vite-based admin panel leveraging React Query for efficient data fetching, caching, and mutations.
+- **Integrated Blog CMS:** Next.js 15 Server Components for blazingly fast, SEO-friendly content delivery.
+- **Containerized Ecosystem:** Docker Compose configuration orchestrating the entire stack for unified development and production deployments.
 
 ---
 
