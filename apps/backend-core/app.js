@@ -56,6 +56,7 @@ app.use("/api/tickets", require("./src/modules/ticket/ticket.route"));
 app.use("/api/cart", require("./src/modules/cart/cart.routes"));
 app.use("/api/payment", require("./src/modules/payment/payment.route"));
 app.use("/api/posts", require("./src/modules/post/post.route"));
+app.use("/api/post-comments", require("./src/modules/post_comment/post_comment.route"));
 app.use("/api/post-categories", require("./src/modules/post_category/post_category.route"));
 app.use("/api/files", require("./src/modules/file/file.route"));
 

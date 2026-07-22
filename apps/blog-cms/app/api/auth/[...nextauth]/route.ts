@@ -1,7 +1,6 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { getUserByEmail } from "@/modules/auth/auth.service";
-import bcrypt from "bcrypt";
+
 
 const handler = NextAuth({
   providers: [
@@ -16,24 +15,27 @@ const handler = NextAuth({
           return null;
         }
 
-        const user = await getUserByEmail(credentials.email);
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: credentials.email, password: credentials.password })
+          });
 
-        if (!user) {
-          return null;
+          const data = await res.json();
+          if (res.ok && data.success && data.user) {
+            return {
+              id: data.user.id.toString(),
+              email: data.user.email,
+              name: data.user.full_name || data.user.name,
+              role: data.user.role || 'USER',
+              token: data.token
+            };
+          }
+        } catch (error) {
+          console.error("Login failed:", error);
         }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
-          return null;
-        }
-
-        return {
-          id: user.id.toString(),
-          email: user.email,
-          name: user.name,
-          role: user.role
-        };
+        return null;
       }
     })
   ],

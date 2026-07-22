@@ -1,8 +1,17 @@
 import Link from "next/link";
-import { getCategoryTree } from "@/modules/category/category.service";
+
 
 export default async function AdminCategoriesPage() {
-    const categories = await getCategoryTree();
+    let categories = [];
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/post-categories/tree`, { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            categories = data.data || [];
+        }
+    } catch (err) {
+        console.error("Failed to fetch categories", err);
+    }
 
     return (
         <div className="container-fluid">

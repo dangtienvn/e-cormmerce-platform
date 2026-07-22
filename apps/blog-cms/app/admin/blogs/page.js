@@ -1,11 +1,21 @@
 import Link from "next/link";
 import Image from "next/image";
-import { getPosts, countPosts } from "@/modules/post/post.service";
+
 
 export default async function AdminProductsPage() {
     // Gọi Database lấy danh sách bài viết admin
-    const posts = await getPosts();
-    const total = await countPosts();
+    let posts = [];
+    let total = 0;
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts`, { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            posts = data.data || [];
+            total = data.total || 0;
+        }
+    } catch (err) {
+        console.error("Failed to fetch posts", err);
+    }
 
     return (
         <div className="container-fluid">

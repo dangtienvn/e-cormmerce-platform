@@ -1,9 +1,17 @@
-import { createPost } from "@/modules/post/post.service";
-import { getCategoryTree } from "@/modules/category/category.service";
+
 import { redirect } from "next/navigation";
 
 export default async function CreatePostPage() {
-    const categories = await getCategoryTree();
+    let categories = [];
+    try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/post-categories/tree`, { cache: 'no-store' });
+        if (res.ok) {
+            const data = await res.json();
+            categories = data.data || [];
+        }
+    } catch (err) {
+        console.error("Failed to fetch categories", err);
+    }
 
     const handleSubmit = async (formData: FormData) => {
         "use server";
@@ -13,13 +21,21 @@ export default async function CreatePostPage() {
         const externalStoreUrl = formData.get("externalStoreUrl") as string;
         // In a real app, authorId would come from the session. 
         // We'll hardcode 1 for MVP (assuming User 1 exists).
-        await createPost({
-            title,
-            content,
-            categoryId: isNaN(categoryId) ? undefined : categoryId,
-            externalStoreUrl: externalStoreUrl || undefined,
-            authorId: 1
-        });
+        try {
+            await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/posts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title,
+                    content,
+                    category_id: isNaN(categoryId) ? undefined : categoryId,
+                    external_store_url: externalStoreUrl || undefined,
+                    author_id: 1 // hardcoded for now
+                })
+            });
+        } catch (err) {
+            console.error("Failed to create post", err);
+        }
         
         redirect("/admin/blogs");
     };

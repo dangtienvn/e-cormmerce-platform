@@ -347,6 +347,7 @@ model users {
   support_tickets                      support_tickets[]
   roles                                roles              @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   posts                                posts[]
+  post_comments                        post_comments[]
 
   @@index([email])
   @@index([role_id])
@@ -458,6 +459,7 @@ model posts {
   category           post_categories? @relation(fields: [category_id], references: [id])
   created_at         DateTime         @default(now()) @db.Timestamp(3)
   updated_at         DateTime         @updatedAt @db.Timestamp(3)
+  post_comments      post_comments[]
 
   @@index([author_id])
   @@index([category_id])
@@ -467,4 +469,17 @@ model posts {
 enum post_status {
   DRAFT
   PUBLISHED
+}
+
+model post_comments {
+  id         Int       @id @default(autoincrement())
+  post_id    Int
+  user_id    Int
+  content    String    @db.Text
+  created_at DateTime  @default(now()) @db.Timestamp(3)
+  post       posts     @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  user       users     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([post_id])
+  @@index([user_id])
 }
