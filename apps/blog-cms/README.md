@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=NexBlog%20CMS&fontSize=50&fontAlignY=38&desc=N%E1%BB%81n%20T%E1%BA%A3ng%20Blog%20%26%20Qu%E1%BA%A3n%20Tr%E1%BB%8B%20N%E1%BB%99i%20Dung%20Chuy%C3%AAn%20Nghi%E1%BB%87p&descAlignY=60&descAlign=60" width="100%" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=NexBlog%20CMS&fontSize=50&fontAlignY=38&desc=N%E1%BB%81n%20T%E1%BA%A3ng%20Blog%20v%C3%A0%20Qu%E1%BA%A3n%20Tr%E1%BB%8B%20N%E1%BB%99i%20Dung%20Chuy%C3%AAn%20Nghi%E1%BB%87p&descAlignY=60&descAlign=60" width="100%" />
 </div>
 
 ---

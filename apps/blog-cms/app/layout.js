@@ -6,22 +6,29 @@ import Footer from "@/components/Footer";
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata = {
-  title: "DevBlog - Kiến Thức Dành Cho Lập Trình Viên",
-  description: "Nơi chia sẻ kiến thức và kinh nghiệm về lập trình và công nghệ.",
+  title: "Kernel – Kiến Thức Lập Trình",
+  description: "Nơi chia sẻ kiến thức sâu về JavaScript, Next.js, System Design và hành trình phát triển phần mềm chuẩn Production.",
+  openGraph: {
+    title: "Kernel – Kiến Thức Lập Trình",
+    description: "JavaScript, Next.js, System Design & DevOps cho Developer Việt Nam.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="vi" className={`${inter.variable} ${outfit.variable} dark`}>
-      <body className="antialiased bg-[#0b0f19] text-white selection:bg-pink-500 selection:text-white">
+    <html lang="vi" className={`${inter.variable} ${outfit.variable}`}>
+      <body className="antialiased bg-[#f8fafc] text-slate-900 selection:bg-teal-500 selection:text-white">
         <div className="flex flex-col min-h-screen font-sans">
           <Header />
           <main className="flex-grow">
