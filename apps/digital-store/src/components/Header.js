@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { ShoppingCart, Search, User } from 'lucide-react';
 import useCartStore from '../store/useCartStore';
@@ -20,12 +21,21 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200">
       <div className="container mx-auto px-6 h-14 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 flex items-center justify-center bg-black text-white rounded-md font-bold text-lg tracking-tighter">
-            D
+        <Link 
+          href="/" 
+          onClick={(e) => {
+            if (window.location.pathname === '/') {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }}
+          className="flex items-center gap-3 group"
+        >
+          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-gray-200">
+            <Image src="/img/avatar.png" alt="Kernel Avatar" fill className="object-cover" />
           </div>
           <span className="text-xl font-bold text-gray-900 tracking-tight">
-            DigitalStore
+            Kernel
           </span>
         </Link>
 

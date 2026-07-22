@@ -1,5 +1,5 @@
 {
-  "name": "digital-store",
+  "name": "@e-commerce-platform/digital-store",
   "version": "0.1.0",
   "private": true,
   "scripts": {

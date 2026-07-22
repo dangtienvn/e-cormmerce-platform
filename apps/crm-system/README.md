@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=CRM%20System&fontSize=50&fontAlignY=38&desc=H%E1%BB%87%20Th%E1%BB%91ng%20Qu%E1%BA%A3n%20L%C3%BD%20B%C3%A1n%20H%C3%A0ng%20%26%20Ch%C4%83m%20S%C3%B3c%20Kh%C3%A1ch%20H%C3%A0ng&descAlignY=60&descAlign=60" width="100%" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&height=200&section=header&text=CRM%20System&fontSize=50&fontAlignY=38&desc=H%E1%BB%87%20Th%E1%BB%91ng%20Qu%E1%BA%A3n%20L%C3%BD%20B%C3%A1n%20H%C3%A0ng%20v%C3%A0%20Ch%C4%83m%20S%C3%B3c%20Kh%C3%A1ch%20H%C3%A0ng&descAlignY=60&descAlign=60" width="100%" />
 
   <p>
     <a href="https://reactjs.org/"><img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" /></a>
