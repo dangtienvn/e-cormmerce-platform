@@ -18,8 +18,23 @@ const CategoryController = {
    */
   async getAll(req, res, next) {
     try {
-      const { search } = req.query;
+      const { search, tree } = req.query;
+      if (tree === 'true') {
+        const categories = await CategoryService.getCategoryTree(search);
+        return ResponseHelper.success(res, categories);
+      }
+
       const categories = await CategoryService.getAllCategories(search);
+      return ResponseHelper.success(res, categories);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getTree(req, res, next) {
+    try {
+      const { search } = req.query;
+      const categories = await CategoryService.getCategoryTree(search);
       return ResponseHelper.success(res, categories);
     } catch (error) {
       next(error);

@@ -4,13 +4,24 @@ const slugify = require('slugify');
 
 class PostService {
   async getPosts(params = {}) {
-    const { categoryId, status, skip = 0, take = 10 } = params;
-    
+    const { categoryId, status, tag, search, skip = 0, take = 10 } = params;
+
+    const where = {
+      ...(categoryId && { category_id: parseInt(categoryId) }),
+      ...(status && { status }),
+      ...(tag && { tags: { has: tag } }),
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+          { seo_title: { contains: search, mode: 'insensitive' } },
+          { seo_description: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
     return await prisma.posts.findMany({
-      where: {
-        ...(categoryId && { category_id: parseInt(categoryId) }),
-        ...(status && { status }),
-      },
+      where,
       include: {
         category: true,
         author: { select: { id: true, full_name: true, email: true } },
@@ -21,8 +32,23 @@ class PostService {
     });
   }
 
-  async countPosts() {
-    return await prisma.posts.count();
+  async countPosts(params = {}) {
+    const { categoryId, status, tag, search } = params;
+    const where = {
+      ...(categoryId && { category_id: parseInt(categoryId) }),
+      ...(status && { status }),
+      ...(tag && { tags: { has: tag } }),
+      ...(search && {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+          { seo_title: { contains: search, mode: 'insensitive' } },
+          { seo_description: { contains: search, mode: 'insensitive' } },
+        ],
+      }),
+    };
+
+    return await prisma.posts.count({ where });
   }
 
   async getPostById(id) {
@@ -45,6 +71,13 @@ class PostService {
     });
   }
 
+  async getTags() {
+    const rows = await prisma.$queryRawUnsafe(
+      'SELECT DISTINCT UNNEST(tags) as tag FROM posts WHERE tags IS NOT NULL'
+    );
+    return rows.map((row) => row.tag).filter(Boolean);
+  }
+
   async createPost(data) {
     const slug = slugify(data.title, { lower: true, strict: true }) + '-' + Date.now();
     return await prisma.posts.create({
@@ -56,6 +89,10 @@ class PostService {
         status: data.status || 'DRAFT',
         author_id: parseInt(data.author_id),
         category_id: data.category_id ? parseInt(data.category_id) : null,
+        tags: Array.isArray(data.tags) ? data.tags.map(String) : undefined,
+        seo_title: data.seo_title || null,
+        seo_description: data.seo_description || null,
+        seo_keywords: data.seo_keywords || null,
         slug,
       },
     });
@@ -67,11 +104,16 @@ class PostService {
       slug = slugify(data.title, { lower: true, strict: true }) + '-' + Date.now();
     }
     
-    // Clean up undefined/null values appropriately if needed, or rely on Prisma ignoring undefined
-    const updateData = { ...data };
-    if (updateData.category_id) updateData.category_id = parseInt(updateData.category_id);
-    if (updateData.author_id) updateData.author_id = parseInt(updateData.author_id);
-    
+    const updateData = {
+      ...data,
+      ...(data.category_id ? { category_id: parseInt(data.category_id) } : {}),
+      ...(data.author_id ? { author_id: parseInt(data.author_id) } : {}),
+      ...(Array.isArray(data.tags) ? { tags: data.tags.map(String) } : {}),
+      seo_title: data.seo_title !== undefined ? data.seo_title : undefined,
+      seo_description: data.seo_description !== undefined ? data.seo_description : undefined,
+      seo_keywords: data.seo_keywords !== undefined ? data.seo_keywords : undefined,
+    };
+
     return await prisma.posts.update({
       where: { id: parseInt(id) },
       data: {

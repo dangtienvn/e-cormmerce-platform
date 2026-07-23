@@ -4,7 +4,7 @@ class PostController {
   async getPosts(req, res, next) {
     try {
       const posts = await PostService.getPosts(req.query);
-      const total = await PostService.countPosts();
+      const total = await PostService.countPosts(req.query);
       res.status(200).json({ success: true, data: posts, total });
     } catch (error) {
       next(error);
@@ -30,6 +30,15 @@ class PostController {
         return res.status(404).json({ success: false, message: 'Post not found' });
       }
       res.status(200).json({ success: true, data: post });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getTags(req, res, next) {
+    try {
+      const tags = await PostService.getTags();
+      res.status(200).json({ success: true, data: tags });
     } catch (error) {
       next(error);
     }

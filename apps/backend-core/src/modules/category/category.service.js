@@ -5,6 +5,42 @@
 const AppError = require("../../utils/app-error");
 const CategoryRepository = require("./category.repository");
 
+function buildCategoryTree(categories) {
+  const map = new Map();
+  const roots = [];
+
+  categories.forEach(category => {
+   map.set(category.id, { ...category, children: [] });
+  });
+
+  categories.forEach(category => {
+   const node = map.get(category.id);
+   if (category.parent_id && map.has(category.parent_id)) {
+     map.get(category.parent_id).children.push(node);
+   } else {
+     roots.push(node);
+   }
+  });
+
+  return roots;
+}
+
+function isDescendant(categories, parentId, childId) {
+  const map = new Map();
+  categories.forEach(category => {
+   map.set(category.id, category.parent_id || null);
+  });
+
+  let current = parentId;
+  while (current) {
+   if (current === childId) {
+     return true;
+   }
+   current = map.get(current) || null;
+  }
+  return false;
+}
+
 /**
  * Đối tượng xử lý các nghiệp vụ của Category (Danh mục)
  * @namespace CategoryService
@@ -16,7 +52,17 @@ const CategoryService = {
    * @returns {Promise<Array<Object>>} Danh sách các danh mục
    */
   async getAllCategories(search) {
-    return await CategoryRepository.findAll(search);
+   return await CategoryRepository.findAll(search);
+  },
+
+  /**
+   * Lấy danh sách danh mục dưới dạng cây lồng nhau
+   * @param {string} search - Từ khóa tìm kiếm
+   * @returns {Promise<Array<Object>>} Cây danh mục
+   */
+  async getCategoryTree(search) {
+   const categories = await CategoryRepository.findAllWithRelations(search);
+   return buildCategoryTree(categories);
   },
 
   /**
@@ -39,15 +85,31 @@ const CategoryService = {
    * @throws {AppError} Ném ra lỗi 400 nếu tên trống hoặc tên danh mục đã tồn tại
    */
   async createCategory(data) {
-    const { name } = data;
+    const { name, status, parent_id } = data;
     if (!name || !name.trim()) {
       throw new AppError("Tên danh mục không được để trống", 400);
     }
-    const exists = await CategoryRepository.findByName(name.trim());
+
+    const trimmedName = name.trim();
+    const exists = await CategoryRepository.findByName(trimmedName);
     if (exists) {
       throw new AppError("Tên danh mục đã tồn tại", 400);
     }
-    return await CategoryRepository.create({ name: name.trim() });
+
+    const createData = { name: trimmedName };
+    if (status && typeof status === 'string') {
+      createData.status = status.trim();
+    }
+
+    if (parent_id !== undefined && parent_id !== null) {
+      const parentCategory = await CategoryRepository.findById(parent_id);
+      if (!parentCategory) {
+        throw new AppError("Danh mục cha không tồn tại", 400);
+      }
+      createData.parent_id = parseInt(parent_id);
+    }
+
+    return await CategoryRepository.create(createData);
   },
 
   /**
@@ -59,19 +121,61 @@ const CategoryService = {
    * @throws {AppError} Ném ra lỗi 400 nếu dữ liệu không hợp lệ, không tìm thấy danh mục hoặc tên mới đã bị trùng
    */
   async updateCategory(id, data) {
-    const { name } = data;
-    if (!name || !name.trim()) {
-      throw new AppError("Tên danh mục không được để trống", 400);
-    }
     const category = await CategoryRepository.findById(id);
     if (!category) {
       throw new AppError("Không tìm thấy danh mục", 400);
     }
-    const exists = await CategoryRepository.findByName(name.trim());
-    if (exists && exists.id !== Number(id)) {
-      throw new AppError("Tên danh mục đã tồn tại", 400);
+
+    const updateData = {};
+    if (data.name !== undefined) {
+      if (!data.name || !data.name.trim()) {
+        throw new AppError("Tên danh mục không được để trống", 400);
+      }
+      const trimmedName = data.name.trim();
+      const exists = await CategoryRepository.findByName(trimmedName);
+      if (exists && exists.id !== Number(id)) {
+        throw new AppError("Tên danh mục đã tồn tại", 400);
+      }
+      updateData.name = trimmedName;
     }
-    return await CategoryRepository.update(id, { name: name.trim() });
+
+    if (data.status !== undefined) {
+      if (data.status !== null && typeof data.status !== 'string') {
+        throw new AppError("Status danh mục không hợp lệ", 400);
+      }
+      updateData.status = data.status === null ? null : data.status.trim();
+    }
+
+    if (data.parent_id !== undefined) {
+      if (data.parent_id === null) {
+        updateData.parent_id = null;
+      } else {
+        const parentId = parseInt(data.parent_id);
+        if (Number.isNaN(parentId)) {
+          throw new AppError("Giá trị parent_id không hợp lệ", 400);
+        }
+        if (parentId === Number(id)) {
+          throw new AppError("Danh mục cha không thể trùng với chính nó", 400);
+        }
+        const parentCategory = await CategoryRepository.findById(parentId);
+        if (!parentCategory) {
+          throw new AppError("Danh mục cha không tồn tại", 400);
+        }
+
+        const categories = await CategoryRepository.findAllWithRelations();
+        if (isDescendant(categories, parentId, Number(id))) {
+          throw new AppError("Danh mục cha không được là con của danh mục hiện tại", 400);
+        }
+
+        updateData.parent_id = parentId;
+      }
+    }
+
+    if (!Object.keys(updateData).length) {
+      return category;
+    }
+
+    return await CategoryRepository.update(id, updateData);
   },
 
   /**

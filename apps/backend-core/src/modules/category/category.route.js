@@ -12,6 +12,7 @@ const { protect, admin } = require("../../middlewares/auth.middleware");
  * Yêu cầu đăng nhập (protect) và quyền quản trị viên (admin)
  */
 router.get("/trash", protect, admin, CategoryController.getTrash);
+router.get("/tree", CategoryController.getTree);
 
 /**
  * Route lấy danh sách tất cả các danh mục
