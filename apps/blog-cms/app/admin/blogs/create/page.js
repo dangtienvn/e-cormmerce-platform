@@ -13,12 +13,12 @@ export default async function CreatePostPage() {
         console.error("Failed to fetch categories", err);
     }
 
-    const handleSubmit = async (formData: FormData) => {
+    const handleSubmit = async (formData) => {
         "use server";
-        const title = formData.get("title") as string;
-        const content = formData.get("content") as string;
-        const categoryId = parseInt(formData.get("categoryId") as string);
-        const externalStoreUrl = formData.get("externalStoreUrl") as string;
+        const title = formData.get("title");
+        const content = formData.get("content");
+        const categoryId = parseInt(formData.get("categoryId"));
+        const externalStoreUrl = formData.get("externalStoreUrl");
         // In a real app, authorId would come from the session. 
         // We'll hardcode 1 for MVP (assuming User 1 exists).
         try {
