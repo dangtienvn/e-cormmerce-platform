@@ -41,9 +41,20 @@ const CartService = {
       orderBy: { created_at: 'desc' }
     });
     
-    // Map to just product IDs to align with localStorage cart format initially, 
-    // or return full objects for the cart page.
-    return items.map(item => item.product_id);
+    return items.map(item => ({
+      product_id: item.product_id,
+      quantity: item.quantity || 1,
+      added_at: item.created_at,
+      product: {
+        id: item.products?.id,
+        name: item.products?.name,
+        price: item.products?.price,
+        type: item.products?.type,
+        status: item.products?.status,
+        is_active: item.products?.is_active,
+        primary_image: item.products?.primary_image || item.products?.product_images?.[0]?.image_url || null
+      }
+    }));
   },
 
   /**
@@ -55,24 +66,40 @@ const CartService = {
    * @returns {Promise<Object>} Trả về đối tượng bản ghi giỏ hàng (cart_item) đã thêm, hoặc bản ghi hiện tại nếu sản phẩm đã tồn tại trong giỏ.
    * @throws {AppError} Quăng lỗi HTTP 400 nếu thiếu productId.
    */
-  async addToCart(userId, productId) {
+  async addToCart(userId, productId, quantity = 1) {
     if (!productId) throw new AppError("Thiếu product_id", 400);
+
+    const parsedProductId = parseInt(productId);
+    const parsedQuantity = Math.max(1, Number(quantity) || 1);
 
     const exists = await prisma.cart_items.findUnique({
       where: {
         user_id_product_id: {
           user_id: parseInt(userId),
-          product_id: parseInt(productId)
+          product_id: parsedProductId
         }
       }
     });
 
-    if (exists) return exists;
+    if (exists) {
+      return await prisma.cart_items.update({
+        where: {
+          user_id_product_id: {
+            user_id: parseInt(userId),
+            product_id: parsedProductId
+          }
+        },
+        data: {
+          quantity: (exists.quantity || 1) + parsedQuantity
+        }
+      });
+    }
 
     return await prisma.cart_items.create({
       data: {
         user_id: parseInt(userId),
-        product_id: parseInt(productId)
+        product_id: parsedProductId,
+        quantity: parsedQuantity
       }
     });
   },
@@ -143,6 +170,40 @@ const CartService = {
       where: {
         user_id: parseInt(userId),
         product_id: parseInt(productId)
+      }
+    });
+  },
+
+  /**
+   * Cập nhật số lượng một sản phẩm trong giỏ hàng.
+   * Nếu số lượng đặt là 0 hoặc nhỏ hơn, sản phẩm sẽ bị xóa khỏi giỏ hàng.
+   * @async
+   * @param {string|number} userId - ID người dùng.
+   * @param {string|number} productId - ID sản phẩm.
+   * @param {number} quantity - Số lượng mới.
+   * @returns {Promise<Object>} Bản ghi giỏ hàng đã cập nhật hoặc null nếu đã xóa.
+   */
+  async updateQuantity(userId, productId, quantity) {
+    if (!productId) throw new AppError("Thiếu product_id", 400);
+    const parsedQuantity = Number(quantity);
+    if (Number.isNaN(parsedQuantity)) {
+      throw new AppError("Số lượng không hợp lệ", 400);
+    }
+
+    if (parsedQuantity <= 0) {
+      await this.removeFromCart(userId, productId);
+      return null;
+    }
+
+    return await prisma.cart_items.update({
+      where: {
+        user_id_product_id: {
+          user_id: parseInt(userId),
+          product_id: parseInt(productId)
+        }
+      },
+      data: {
+        quantity: parsedQuantity
       }
     });
   },

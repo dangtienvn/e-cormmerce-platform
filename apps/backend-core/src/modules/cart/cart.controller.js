@@ -40,9 +40,20 @@ const CartController = {
    */
   async addToCart(req, res, next) {
     try {
-      const { productId } = req.body;
-      const item = await CartService.addToCart(req.user.id, productId);
+      const { productId, quantity } = req.body;
+      const item = await CartService.addToCart(req.user.id, productId, quantity);
       return ResponseHelper.success(res, item);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateQuantity(req, res, next) {
+    try {
+      const { productId } = req.params;
+      const { quantity } = req.body;
+      const item = await CartService.updateQuantity(req.user.id, productId, quantity);
+      return ResponseHelper.success(res, item, "Cập nhật số lượng giỏ hàng thành công");
     } catch (error) {
       next(error);
     }

@@ -137,7 +137,7 @@ const OrderController = {
   async sepayWebhook(req, res, next) {
     try {
       const token = req.headers['authorization'] || req.headers['x-sepay-token'] || req.body.apikey;
-      if (process.env.SEPAY_API_TOKEN && token !== `Bearer ${process.env.SEPAY_API_TOKEN}` && token !== process.env.SEPAY_API_TOKEN) {
+      if (process.env.SEPAY_API_TOKEN && token !== process.env.SEPAY_API_TOKEN) {
         return res.status(401).json({ success: false, message: "Unauthorized Webhook" });
       }
       await OrderService.processSepayWebhook(req.body);
@@ -272,3 +272,4 @@ const OrderController = {
 };
 
 module.exports = OrderController;
+

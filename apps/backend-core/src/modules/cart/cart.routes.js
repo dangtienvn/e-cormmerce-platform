@@ -25,14 +25,21 @@ router.get('/', CartController.getCart);
  * @access Private
  */
 router.post('/', CartController.addToCart);
-
+ 
+/**
+ * @route PUT /api/cart/:productId
+ * @description Cập nhật số lượng của một sản phẩm trong giỏ hàng
+ * @access Private
+ */
+router.put('/:productId', CartController.updateQuantity);
+ 
 /**
  * @route POST /api/cart/sync
  * @description Đồng bộ giỏ hàng từ máy khách lên máy chủ
  * @access Private
  */
 router.post('/sync', CartController.syncCart);
-
+ 
 /**
  * @route DELETE /api/cart/:productId
  * @description Xóa một sản phẩm cụ thể khỏi giỏ hàng
