@@ -33,9 +33,17 @@ const AuthController = {
         role: "customer"
       });
 
+      // send email verification async
+      try {
+        await AuthService.sendEmailVerificationForUser({ id: user.id, email: email });
+      } catch (err) {
+        // log and continue - registration should not fail because email couldn't be sent
+        console.error('Failed to send verification email:', err);
+      }
+
       res.status(201).json({
         success: true,
-        message: "Đăng ký thành công",
+        message: "Đăng ký thành công. Vui lòng kiểm tra email để xác thực tài khoản",
         user
       });
     } catch (error) {
@@ -61,11 +69,69 @@ const AuthController = {
 
       const data = await AuthService.login(email, password);
 
+      // set refresh token as HttpOnly secure cookie
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/auth',
+        expires: data.refreshExpiresAt || new Date(Date.now() + 1000 * 60 * 60 * 24 * 30)
+      };
+      res.cookie('refreshToken', data.refreshToken, cookieOptions);
+
       return res.json({
         success: true,
         message: "Login thành công",
-        ...data
+        token: data.accessToken,
+        user: data.user
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async refresh(req, res, next) {
+    try {
+      const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken || req.headers['x-refresh-token'];
+      if (!refreshToken) return res.status(401).json({ success: false, message: 'Missing refresh token' });
+
+      const data = await AuthService.refreshAccessToken(refreshToken);
+
+      const cookieOptions = {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/api/auth',
+        expires: data.refreshExpiresAt
+      };
+      res.cookie('refreshToken', data.refreshToken, cookieOptions);
+
+      return res.json({ success: true, token: data.accessToken });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async logout(req, res, next) {
+    try {
+      const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken || req.headers['x-refresh-token'];
+      if (refreshToken) {
+        await AuthService.logout(refreshToken);
+      }
+      // clear cookie
+      res.clearCookie('refreshToken', { path: '/api/auth' });
+      return res.json({ success: true, message: 'Logged out' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async verifyEmail(req, res, next) {
+    try {
+      const token = req.query.token || req.body.token;
+      if (!token) return res.status(400).json({ success: false, message: 'Missing token' });
+      await AuthService.verifyEmail(token);
+      return res.json({ success: true, message: 'Email đã được xác thực' });
     } catch (error) {
       next(error);
     }

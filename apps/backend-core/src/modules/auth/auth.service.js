@@ -8,7 +8,13 @@ const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const UserRepository = require("../user/user.repository");
 const PasswordResetRepository = require("../user/password-reset.repository");
-const { sendResetPasswordEmail } = require("../../utils/mailer");
+const RefreshTokenRepository = require("./refresh-token.repository");
+const EmailVerificationRepository = require("./email-verification.repository");
+const { sendResetPasswordEmail, sendEmailVerification } = require("../../utils/mailer");
+const TOKEN_CONFIG = {
+  accessExpires: process.env.ACCESS_TOKEN_EXPIRES || '15m',
+  refreshExpiresDays: Number(process.env.REFRESH_TOKEN_DAYS) || 30
+};
 
 /**
  * Lấy khóa bí mật JWT từ biến môi trường.
@@ -75,12 +81,13 @@ const AuthService = {
       throw new AppError("Sai tài khoản hoặc mật khẩu", 400);
     }
 
-    const payload = { id: user.id, email: user.email, role: user.role_name };
-    const expiresIn = (user.role_name === 'admin' || user.role_name === 'editor') ? '24h' : '30d';
-    const token = jwt.sign(payload, getJwtSecret(), { expiresIn });
+    // generate tokens
+    const tokens = await this.generateTokensForUser(user);
 
     return {
-      token,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      refreshExpiresAt: tokens.refreshExpiresAt,
       user: {
         id: user.id,
         name: user.full_name || user.username,
@@ -149,7 +156,102 @@ const AuthService = {
 
     // remove used token
     await PasswordResetRepository.deleteById(record.id);
+  },
+
+  /**
+   * Generate access + refresh tokens for a user and persist refresh token hash.
+   * @param {Object} user
+   */
+  async generateTokensForUser(user) {
+    const payload = { id: user.id, email: user.email, role: user.role_name };
+    const accessToken = jwt.sign(payload, getJwtSecret(), { expiresIn: TOKEN_CONFIG.accessExpires });
+
+    // refresh token: random string stored hashed in DB
+    const refreshRaw = crypto.randomBytes(64).toString('hex');
+    const refreshHash = crypto.createHash('sha256').update(refreshRaw).digest('hex');
+    const expiresAt = new Date(Date.now() + TOKEN_CONFIG.refreshExpiresDays * 24 * 3600 * 1000);
+
+    await RefreshTokenRepository.create(user.id, refreshHash, expiresAt);
+
+    return {
+      accessToken,
+      refreshToken: refreshRaw,
+      refreshExpiresAt: expiresAt
+    };
+  },
+
+  /**
+   * Refresh access token using refresh token raw value. Rotates refresh token.
+   * @param {string} refreshRaw
+   */
+  async refreshAccessToken(refreshRaw) {
+    if (!refreshRaw) throw new AppError('Missing refresh token', 401);
+    const refreshHash = crypto.createHash('sha256').update(refreshRaw).digest('hex');
+    const record = await RefreshTokenRepository.findByTokenHash(refreshHash);
+    if (!record) throw new AppError('Invalid refresh token', 401);
+
+    const expiresAt = new Date(record.expires_at || record.expiresAt || record.expires);
+    if (expiresAt.getTime() < Date.now()) {
+      await RefreshTokenRepository.deleteById(record.id);
+      throw new AppError('Refresh token expired', 401);
+    }
+
+    const user = await UserRepository.findById(record.user_id || record.userId);
+    if (!user) throw new AppError('User not found', 400);
+
+    // rotate refresh token: delete old & create new
+    await RefreshTokenRepository.deleteById(record.id);
+    const newRaw = crypto.randomBytes(64).toString('hex');
+    const newHash = crypto.createHash('sha256').update(newRaw).digest('hex');
+    const newExpires = new Date(Date.now() + TOKEN_CONFIG.refreshExpiresDays * 24 * 3600 * 1000);
+    await RefreshTokenRepository.create(user.id, newHash, newExpires);
+
+    const payload = { id: user.id, email: user.email, role: user.role_name };
+    const newAccess = jwt.sign(payload, getJwtSecret(), { expiresIn: TOKEN_CONFIG.accessExpires });
+
+    return { accessToken: newAccess, refreshToken: newRaw, refreshExpiresAt: newExpires };
+  },
+
+  async logout(refreshRaw) {
+    if (!refreshRaw) return;
+    const refreshHash = crypto.createHash('sha256').update(refreshRaw).digest('hex');
+    await RefreshTokenRepository.deleteByTokenHash(refreshHash);
+  },
+
+  /**
+   * Create email verification token and send verification email.
+   * @param {Object} user
+   */
+  async sendEmailVerificationForUser(user) {
+    const tokenRaw = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(tokenRaw).digest('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000); // 7 days
+
+    // remove existing
+    await EmailVerificationRepository.deleteByUserId(user.id);
+    await EmailVerificationRepository.createToken(user.id, tokenHash, expiresAt);
+
+    await sendEmailVerification(user.email, tokenRaw);
+  },
+
+  async verifyEmail(tokenRaw) {
+    const tokenHash = crypto.createHash('sha256').update(tokenRaw).digest('hex');
+    const record = await EmailVerificationRepository.findByTokenHash(tokenHash);
+    if (!record) throw new AppError('Invalid or expired verification token', 400);
+
+    const expiresAt = new Date(record.expires_at || record.expiresAt || record.expires);
+    if (expiresAt.getTime() < Date.now()) {
+      await EmailVerificationRepository.deleteById(record.id);
+      throw new AppError('Verification token expired', 400);
+    }
+
+    // mark user as verified
+    await UserRepository.setEmailVerified(record.user_id || record.userId);
+    await EmailVerificationRepository.deleteById(record.id);
+
+    return true;
   }
 };
 
+module.exports = AuthService;
 module.exports = AuthService;

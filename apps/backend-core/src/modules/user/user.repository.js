@@ -423,6 +423,19 @@ const UserRepository = {
       data: { is_locked: isLocked }
     });
     return true;
+  },
+
+  /**
+   * Đánh dấu email của người dùng đã được xác thực.
+   * @async
+   * @param {number|string} id
+   */
+  async setEmailVerified(id) {
+    await prisma.users.update({
+      where: { id: parseInt(id) },
+      data: { email_verified_at: new Date() }
+    });
+    return true;
   }
 };
 

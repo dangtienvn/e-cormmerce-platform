@@ -27,6 +27,12 @@ router.post(
 
 router.post("/login", AuthController.login);
 
+// refresh access token (reads refresh cookie or body/header)
+router.post('/refresh', AuthController.refresh);
+
+// logout (revoke refresh token)
+router.post('/logout', AuthController.logout);
+
 router.post(
 	"/forgot",
 	authLimiter,
@@ -46,5 +52,9 @@ router.post(
 	runValidation,
 	AuthController.reset
 );
+
+// verify email link
+router.get('/verify-email', AuthController.verifyEmail);
+router.post('/verify-email', AuthController.verifyEmail);
 
 module.exports = router;
