@@ -86,6 +86,27 @@ async function sendSetPasswordInviteEmail(toEmail, token, name) {
 }
 
 /**
+ * Gửi email xác thực địa chỉ email sau khi đăng ký.
+ * @async
+ * @param {string} toEmail
+ * @param {string} token
+ */
+async function sendEmailVerification(toEmail, token) {
+  const frontend = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const verifyLink = `${frontend.replace(/\/$/, '')}/verify-email?token=${token}`;
+
+  const info = await transporter.sendMail({
+  from: process.env.FROM_EMAIL || 'no-reply@example.com',
+  to: toEmail,
+  subject: 'Xác thực địa chỉ email',
+  html: `<p>Xin chào,</p><p>Nhấn vào liên kết sau để xác thực email của bạn:</p><p><a href="${verifyLink}">${verifyLink}</a></p><p>Liên kết có hiệu lực trong 7 ngày.</p>`,
+  text: `Mở liên kết để xác thực email: ${verifyLink}`
+  });
+
+  return info;
+}
+
+/**
  * @function sendInvoiceEmail
  * @description Gửi email chứa thông tin chi tiết đơn hàng (hóa đơn) và hướng dẫn thanh toán cho khách hàng.
  * 
@@ -175,5 +196,6 @@ module.exports = {
   sendSetPasswordInviteEmail,
   sendInvoiceEmail,
   sendPaymentSuccessEmail,
+  sendEmailVerification,
   paymentMethodLabel,
 };

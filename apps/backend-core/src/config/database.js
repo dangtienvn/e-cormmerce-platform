@@ -52,6 +52,32 @@ async function syncSchema() {
       );
       console.log('Schema sync: added orders.voucher_code column');
     }
+
+    const postColumns = await prisma.$queryRaw`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+        AND table_name = 'posts'
+        AND column_name IN ('tags', 'seo_title', 'seo_description', 'seo_keywords')
+    `;
+
+    const existingPostColumns = postColumns.map((row) => row.column_name);
+    if (!existingPostColumns.includes('tags')) {
+      await prisma.$executeRawUnsafe('ALTER TABLE "posts" ADD COLUMN "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::text[]');
+      console.log('Schema sync: added posts.tags column');
+    }
+    if (!existingPostColumns.includes('seo_title')) {
+      await prisma.$executeRawUnsafe('ALTER TABLE "posts" ADD COLUMN "seo_title" VARCHAR(255) NULL');
+      console.log('Schema sync: added posts.seo_title column');
+    }
+    if (!existingPostColumns.includes('seo_description')) {
+      await prisma.$executeRawUnsafe('ALTER TABLE "posts" ADD COLUMN "seo_description" TEXT NULL');
+      console.log('Schema sync: added posts.seo_description column');
+    }
+    if (!existingPostColumns.includes('seo_keywords')) {
+      await prisma.$executeRawUnsafe('ALTER TABLE "posts" ADD COLUMN "seo_keywords" TEXT NULL');
+      console.log('Schema sync: added posts.seo_keywords column');
+    }
   } catch (error) {
     console.warn('Schema sync skipped:', error.message);
   }

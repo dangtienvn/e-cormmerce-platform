@@ -295,13 +295,13 @@ const ReportRepository = {
     const statusMap = {
       'paid': 'Hoàn tất (Paid)',
       'pending': 'Chờ duyệt (Pending)',
-      'failed': 'Thất bại (Failed)'
+      'revoked': 'Bị thu hồi (Revoked)'
     };
 
     const counts = {
       'paid': 0,
       'pending': 0,
-      'failed': 0
+      'revoked': 0
     };
 
     rows.forEach(r => {
