@@ -17,6 +17,7 @@ const TrashService = require('./src/shared/trash.service');
 const path = require("path");
 const morgan = require('morgan');
 const logger = require('./src/utils/logger');
+const cookieParser = require('cookie-parser');
 
 const app = express();
 // Tin tưởng proxy để lấy IP chính xác khi dùng Nginx/Render/Heroku
@@ -28,9 +29,22 @@ TrashService.init();
 // Kết nối với cơ sở dữ liệu Prisma/PostgreSQL
 connectDB();
 
-// middleware
-app.use(cors());  
+// Lấy danh sách các domain được phép gọi API (nếu có)
+const allowedOrigins = process.env.FRONTEND_URLS ? process.env.FRONTEND_URLS.split(",") : ["http://localhost:3000", "http://localhost:3001", "http://localhost:3002", "http://localhost:3003", "http://localhost:5173"];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
+
 app.use(express.json());
+app.use(cookieParser());
 
 // morgan logging
 app.use(morgan('combined', { stream: logger.stream }));
@@ -60,9 +74,9 @@ app.use("/api/post-comments", require("./src/modules/post_comment/post_comment.r
 app.use("/api/post-categories", require("./src/modules/post_category/post_category.route"));
 app.use("/api/files", require("./src/modules/file/file.route"));
 
-// Fallback to serve index.html for any other requests (helps with navigation)
+// Healthcheck Route
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+  res.json({ status: "API is running", version: "1.0.0" });
 });
 
 // port
